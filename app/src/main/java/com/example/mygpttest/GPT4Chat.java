@@ -56,7 +56,7 @@ public class GPT4Chat extends AppCompatActivity {
             chatHistory.put(userMessage);
 
             JSONObject requestBody = new JSONObject();
-            requestBody.put("model", "gpt-4");
+            requestBody.put("model", "gpt3.5-turbo");
             requestBody.put("messages", chatHistory);
             requestBody.put("temperature", 0.7);
             requestBody.put("max_tokens", 1000);

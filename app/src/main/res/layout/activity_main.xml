@@ -30,11 +30,23 @@
 
     <TextView
         android:id="@+id/textViewRes"
-        android:layout_width="330dp"
-        android:layout_height="554dp"
+        android:layout_width="326dp"
+        android:layout_height="448dp"
         android:layout_marginTop="44dp"
         android:text="OUTPUT"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/buttonSend" />
+
+    <TextView
+        android:id="@+id/textViewReq"
+        android:layout_width="365dp"
+        android:layout_height="72dp"
+        android:textAlignment="center"
+        android:textColor="#000000"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toTopOf="@+id/editText"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

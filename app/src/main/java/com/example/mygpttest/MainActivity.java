@@ -29,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
     protected EditText editText;
     protected Button buttonSend;
     protected TextView textViewRes;
+    protected TextView textViewReq;
 
 
     @Override
@@ -40,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
         editText = findViewById(R.id.editText);
         buttonSend = findViewById(R.id.buttonSend);
         textViewRes = findViewById(R.id.textViewRes);
+        textViewReq = findViewById(R.id.textViewReq);
 
         // 送信ボタンのクリックリスナーを設定
         buttonSend.setOnClickListener(new View.OnClickListener() {
@@ -96,13 +98,15 @@ public class MainActivity extends AppCompatActivity {
 
     protected String send_message(String message) {
         try {
+            textViewReq.setText(editText.getText());
+            editText.setText("");
             JSONObject userMessage = new JSONObject();
             userMessage.put("role", "user");
             userMessage.put("content", message);
             chatHistory.put(userMessage);
 
             JSONObject requestBody = new JSONObject();
-            requestBody.put("model", "gpt-4");
+            requestBody.put("model", "gpt-3.5-turbo");
             requestBody.put("messages", chatHistory);
             requestBody.put("temperature", 0.7);
             requestBody.put("max_tokens", 1000);
@@ -121,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
             Response response = client.newCall(request).execute();
 
             if (response.isSuccessful()) {
+
                 String responseBody = response.body().string();
                 JSONObject jsonResponse = new JSONObject(responseBody);
                 JSONArray choices = jsonResponse.getJSONArray("choices");
