@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-    <!-- インターネットアクセスの許可 -->
+    <!-- インターネット，マイクのアクセスの許可 -->
     <uses-permission android:name="android.permission.INTERNET" />
-
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -15,7 +15,7 @@
         android:theme="@style/Theme.MyGptTest"
         tools:targetApi="31">
         <activity
-            android:name=".SpeechTest"
+            android:name=".SpeechToText"
             android:exported="false">
             <meta-data
                 android:name="android.app.lib_name"

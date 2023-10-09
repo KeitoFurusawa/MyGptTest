@@ -4,6 +4,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -14,6 +16,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -22,10 +25,10 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "MainActivity";
     private static final String API_KEY = "8UCHXpBd7Q2Lw86gWWAFCY6XGBO8JiGUVplGo6AJwsIHK3lIQDqS7HlDMCIs9q4fI0Mf4hvWqiYmEopDxTyVBBw";
     private static final String API_BASE = "https://api.openai.iniad.org/api/v1/chat/completions";
     protected static JSONArray chatHistory = new JSONArray();
-
     protected EditText editText;
     protected Button buttonSend;
     protected TextView textViewRes;
@@ -42,6 +45,10 @@ public class MainActivity extends AppCompatActivity {
         buttonSend = findViewById(R.id.buttonSend);
         textViewRes = findViewById(R.id.textViewRes);
         textViewReq = findViewById(R.id.textViewReq);
+
+        // UI要素の初期設定
+        textViewRes.setMovementMethod(new ScrollingMovementMethod());
+        textViewReq.setMovementMethod(new ScrollingMovementMethod());
 
         // 送信ボタンのクリックリスナーを設定
         buttonSend.setOnClickListener(new View.OnClickListener() {
@@ -85,14 +92,17 @@ public class MainActivity extends AppCompatActivity {
     private class SendMessageTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... params) {
+            //バックグラウンドで実行される処理
             String message = params[0];
             return send_message(message);
         }
 
         @Override
         protected void onPostExecute(String response) {
+            //タスクが完了した後に実行される処理
             // レスポンスをTextViewに表示
             textViewRes.setText("GPT: " + response);
+            Log.i(TAG, "onPostExecute: " + response);
         }
     }
 
@@ -109,9 +119,15 @@ public class MainActivity extends AppCompatActivity {
             requestBody.put("model", "gpt-3.5-turbo");
             requestBody.put("messages", chatHistory);
             requestBody.put("temperature", 0.7);
-            requestBody.put("max_tokens", 1000);
+            //requestBody.put("max_tokens", 1000);
 
-            OkHttpClient client = new OkHttpClient();
+            //OkHttpClient client = new OkHttpClient();
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(10, TimeUnit.SECONDS)
+                    .writeTimeout(10, TimeUnit.SECONDS)
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .build();
+
             MediaType JSON = MediaType.parse("application/json; charset=utf-8");
             RequestBody body = RequestBody.create(JSON, requestBody.toString());
 
@@ -123,9 +139,10 @@ public class MainActivity extends AppCompatActivity {
                     .build();
 
             Response response = client.newCall(request).execute();
-
+            //↑IOException_timeoutはここで出てる↑
+            Log.i(TAG, "SUCCESS: getting response");
             if (response.isSuccessful()) {
-
+                Log.i(TAG, response.toString());
                 String responseBody = response.body().string();
                 JSONObject jsonResponse = new JSONObject(responseBody);
                 JSONArray choices = jsonResponse.getJSONArray("choices");
@@ -138,12 +155,15 @@ public class MainActivity extends AppCompatActivity {
 
                 return reply;
             } else {
+                Log.i(TAG, "Failed on API Request.");
                 return "APIリクエストが失敗しました: " + response.code() + " " + response.message();
             }
         } catch (JSONException e) {
+            Log.i(TAG, "catch JsonException: " + e.getMessage());
             e.printStackTrace();
             return "エラー: " + e.getMessage();
         } catch (IOException e) {
+            Log.i(TAG, "catch IOException: " + e.getMessage());
             e.printStackTrace();
             return "エラー: " + e.getMessage();
         }
