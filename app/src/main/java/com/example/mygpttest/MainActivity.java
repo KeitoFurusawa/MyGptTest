@@ -2,6 +2,7 @@ package com.example.mygpttest;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
@@ -33,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     protected Button buttonSend;
     protected TextView textViewRes;
     protected TextView textViewReq;
+    private Button buttonGoToSpeech;
 
 
     @Override
@@ -43,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
         // UI要素を取得
         editText = findViewById(R.id.editText);
         buttonSend = findViewById(R.id.buttonSend);
+        buttonGoToSpeech = findViewById(R.id.buttonGoToSpeech);
         textViewRes = findViewById(R.id.textViewRes);
         textViewReq = findViewById(R.id.textViewReq);
 
@@ -63,6 +66,15 @@ public class MainActivity extends AppCompatActivity {
                     //メッセージを送信(非同期で実行)
                     new SendMessageTask().execute(user_input);
                 }
+            }
+        });
+        // 画面遷移ボタンのクリックリスナーを設定
+        buttonGoToSpeech.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // 新しいアクティビティに遷移するためのIntentを作成
+                Intent intent = new Intent(MainActivity.this, SpeechToText.class);
+                startActivity(intent); // 新しいアクティビティを起動
             }
         });
         //初期設定を行う
