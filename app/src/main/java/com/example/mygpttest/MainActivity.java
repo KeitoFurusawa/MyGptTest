@@ -26,7 +26,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "main";
     private static final String API_KEY = "8UCHXpBd7Q2Lw86gWWAFCY6XGBO8JiGUVplGo6AJwsIHK3lIQDqS7HlDMCIs9q4fI0Mf4hvWqiYmEopDxTyVBBw";
     private static final String API_BASE = "https://api.openai.iniad.org/api/v1/chat/completions";
     protected static JSONArray chatHistory = new JSONArray();

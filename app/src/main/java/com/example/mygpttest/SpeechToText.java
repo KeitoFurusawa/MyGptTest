@@ -54,7 +54,7 @@ public class SpeechToText extends AppCompatActivity {
 
         // SpeechClientを初期化
         try {
-            int resourceJSONId = R.raw.my_credentials; // JSONファイルのリソースIDを取得
+            int resourceJSONId = R.raw.iniadbessho_credentials; // JSONファイルのリソースIDを取得
             InputStream inputStream = getResources().openRawResource(resourceJSONId); // リソースIDからInputStreamを取得
             GoogleCredentials credentials = GoogleCredentials.fromStream(inputStream); // GoogleCredentialsを初期化
             speechClient = SpeechClient.create(SpeechSettings.newBuilder()
@@ -154,22 +154,25 @@ public class SpeechToText extends AppCompatActivity {
                         StringBuilder transcriptBuilder = new StringBuilder();
                         try {
                             // Speech-to-Text APIにリクエストを送信
+                            Log.i(TAG, "inner try" + audioData.size());
                             RecognitionConfig config = RecognitionConfig.newBuilder()
                                     .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
                                     .setSampleRateHertz(16000)
                                     .setLanguageCode("en-US")
                                     .build();
-
+                            Log.i("before rec audio = " ,TAG);
                             RecognitionAudio audio = RecognitionAudio.newBuilder()
                                     .setContent(audioData)
                                     .build();
-
+                            Log.i("before res = " ,TAG);
                             RecognizeResponse response = speechClient.recognize(config, audio);
+                            Log.i("res = " ,TAG);
 
                             // 認識結果を取得
                             List<SpeechRecognitionResult> results = response.getResultsList();
 
                             for (SpeechRecognitionResult result_s : results) {
+                                Log.i("inner for = " ,TAG);
                                 transcriptBuilder.append(result_s.getAlternatives(0).getTranscript());
                             }
                         } catch (StatusRuntimeException e) {
