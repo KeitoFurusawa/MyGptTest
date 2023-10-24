@@ -16,6 +16,9 @@
         android:theme="@style/Theme.MyGptTest"
         tools:targetApi="31">
         <activity
+            android:name=".StreamActivity"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity2"
             android:exported="false" />
         <activity
