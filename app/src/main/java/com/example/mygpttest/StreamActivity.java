@@ -1,137 +1,103 @@
 package com.example.mygpttest;
 
-import android.media.AudioFormat;
-import android.media.AudioRecord;
-import android.media.MediaRecorder;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.api.gax.core.FixedCredentialsProvider;
-import com.google.api.gax.grpc.InstantiatingGrpcChannelProvider;
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.speech.v1.*;
-import com.google.protobuf.ByteString;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import androidx.core.app.ActivityCompat;
+import android.widget.Toast;
+
 
 public class StreamActivity extends AppCompatActivity {
-
+    private SpeechRecognitionTask recognitionTask;
+    private boolean isTaskRunning = false;
+    private static final String TAG = "speech";
+    private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
+    private boolean permissionToRecordAccepted = false;
     private Button startButton;
     private TextView resultTextView;
-    private boolean isRecognizing = false;
-    private AudioRecord audioRecord;
-    private ByteArrayOutputStream byteArrayOutputStream;
-    private SpeechClient speechClient;
+    private TextView status;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_stream);
-
+        status = findViewById(R.id.textViewStatus);
         startButton = findViewById(R.id.StartButton);
         resultTextView = findViewById(R.id.resultStoT_TextView);
 
+        // マイクのパーミッションが許可されているか確認
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            // マイクのパーミッションが許可されていない場合、リクエストを送信
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO},
+                    REQUEST_RECORD_AUDIO_PERMISSION);
+        } else {
+            setup();
+        }
+
+
+    }
+
+    // パーミッションリクエストの結果を受け取るメソッド
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == REQUEST_RECORD_AUDIO_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // マイクのパーミッションが許可された場合、初期化処理を続行
+                setup();
+            } else {
+                // マイクのパーミッションが許可されなかった場合、ユーザーに通知
+                Toast.makeText(this, "マイクの使用が許可されていません。", Toast.LENGTH_SHORT).show();
+                // あるいは、適切なエラーハンドリングを行う
+            }
+        }
+    }
+
+    private void setup() {
+        Log.d(TAG, "run setup()");
+        // マイクのパーミッションが許可されている場合、初期化処理を続行
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!isRecognizing) {
-                    startRecognition();
+                Log.d(TAG, "Task Status: " + ((recognitionTask == null) ? "null" : recognitionTask.getStatus()));
+                if (!isTaskRunning) {
+                    // 非同期タスクが実行中でない場合、新しいタスクを開始する
+                    Log.d(TAG, "Starting the task");
+                    isTaskRunning = true;
+                    status.setText("listening");
+                    recognitionTask = new SpeechRecognitionTask(StreamActivity.this) {
+                        @Override
+                        protected void onPostExecute(String result) {
+                            resultTextView.setText(result);
+                            isTaskRunning = false;
+                            status.setText("stop");
+                        }
+                    };
+                    recognitionTask.execute();
+                    isTaskRunning = true;
+                    status.setText("listening");
                 } else {
-                    stopRecognition();
+                    // 非同期タスクが実行中の場合、タスクをキャンセルする
+                    if (recognitionTask != null) {
+                        Log.d(TAG, "Cancelling the task");
+                        recognitionTask.cancel(true);
+                    }
+                    isTaskRunning = false;
+                    status.setText("stop");
                 }
             }
         });
-    }
 
-    private void startRecognition() {
-        isRecognizing = true;
-        startButton.setText("Stop Recognition");
-
-        int minBufferSize = AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
-        audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, 16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, minBufferSize);
-        byteArrayOutputStream = new ByteArrayOutputStream();
-
-        audioRecord.startRecording();
-
-        try {
-            int resourceJSONId = R.raw.iniadbessho_credentials; // JSONファイルのリソースIDを取得
-            InputStream inputStream = getResources().openRawResource(resourceJSONId); // リソースIDからInputStreamを取得
-            GoogleCredentials credentials = GoogleCredentials.fromStream(inputStream); // GoogleCredentialsを初期化
-            speechClient = com.google.cloud.speech.v1.SpeechClient.create(com.google.cloud.speech.v1.SpeechSettings.newBuilder()
-                    .setCredentialsProvider(FixedCredentialsProvider.create(credentials))
-                    .setTransportChannelProvider(InstantiatingGrpcChannelProvider.newBuilder().build())
-                    .build());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                byte[] targetData = new byte[3200]; // 200 ms of audio data
-
-                while (isRecognizing) {
-                    int numBytesRead = audioRecord.read(targetData, 0, targetData.length);
-                    if (numBytesRead > 0) {
-                        StreamingRecognizeRequest request = StreamingRecognizeRequest.newBuilder()
-                                .setAudioContent(ByteString.copyFrom(targetData, 0, numBytesRead))
-                                .build();
-                        byteArrayOutputStream.write(targetData, 0, numBytesRead);
-                        new StreamingRecognizeTask().execute(request);
-                    }
-                }
-
-                audioRecord.stop();
-                audioRecord.release();
-            }
-        }).start();
-    }
-
-    private void stopRecognition() {
-        isRecognizing = false;
-        startButton.setText("Start Recognition");
-
-        try {
-            if (speechClient != null) {
-                speechClient.close();
-            }
-
-            if (byteArrayOutputStream != null) {
-                byteArrayOutputStream.close();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private class StreamingRecognizeTask extends AsyncTask<StreamingRecognizeRequest, Void, List<StreamingRecognitionResult>> {
-        @Override
-        protected List<StreamingRecognitionResult> doInBackground(StreamingRecognizeRequest... params) {
-            List<StreamingRecognitionResult> results = new ArrayList<>();
-            try {
-                StreamingRecognizeResponse response = speechClient.streamingRecognize(params[0]);
-                for (StreamingRecognitionResult result : response.getResultsList()) {
-                    results.add(result);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return results;
-        }
-
-        @Override
-        protected void onPostExecute(List<StreamingRecognitionResult> results) {
-            for (StreamingRecognitionResult result : results) {
-                SpeechRecognitionAlternative alternative = result.getAlternativesList().get(0);
-                resultTextView.setText(alternative.getTranscript());
-            }
-        }
     }
 }

@@ -14,7 +14,7 @@
         android:textAlignment="center"
         android:textColor="#000000"
         android:textSize="20sp"
-        android:text="音声認識パッシブ"
+        android:text="stop"
         app:layout_constraintBottom_toTopOf="@+id/resultStoT_TextView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

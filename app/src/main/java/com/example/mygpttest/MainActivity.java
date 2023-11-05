@@ -73,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 // 新しいアクティビティに遷移するためのIntentを作成
-                Intent intent = new Intent(MainActivity.this, SpeechToText.class);
+                Intent intent = new Intent(MainActivity.this, MainActivity2.class);
                 startActivity(intent); // 新しいアクティビティを起動
             }
         });
@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
             //タスクが完了した後に実行される処理
             // レスポンスをTextViewに表示
             textViewRes.setText("GPT: " + response);
-            Log.i(TAG, "onPostExecute: " + response);
+            Log.d(TAG, "onPostExecute: " + response);
         }
     }
 
@@ -152,9 +152,9 @@ public class MainActivity extends AppCompatActivity {
 
             Response response = client.newCall(request).execute();
             //↑IOException_timeoutはここで出てる↑
-            Log.i(TAG, "SUCCESS: getting response");
+            Log.d(TAG, "SUCCESS: getting response");
             if (response.isSuccessful()) {
-                Log.i(TAG, response.toString());
+                Log.d(TAG, response.toString());
                 String responseBody = response.body().string();
                 JSONObject jsonResponse = new JSONObject(responseBody);
                 JSONArray choices = jsonResponse.getJSONArray("choices");
@@ -167,15 +167,15 @@ public class MainActivity extends AppCompatActivity {
 
                 return reply;
             } else {
-                Log.i(TAG, "Failed on API Request.");
+                Log.d(TAG, "Failed on API Request.");
                 return "APIリクエストが失敗しました: " + response.code() + " " + response.message();
             }
         } catch (JSONException e) {
-            Log.i(TAG, "catch JsonException: " + e.getMessage());
+            Log.d(TAG, "catch JsonException: " + e.getMessage());
             e.printStackTrace();
             return "エラー: " + e.getMessage();
         } catch (IOException e) {
-            Log.i(TAG, "catch IOException: " + e.getMessage());
+            Log.d(TAG, "catch IOException: " + e.getMessage());
             e.printStackTrace();
             return "エラー: " + e.getMessage();
         }

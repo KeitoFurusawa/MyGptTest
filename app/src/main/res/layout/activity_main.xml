@@ -42,11 +42,11 @@
 
     <TextView
         android:id="@+id/textViewRes"
-        android:layout_width="326dp"
-        android:layout_height="448dp"
+        android:layout_width="324dp"
+        android:layout_height="242dp"
         android:layout_marginTop="44dp"
-        android:text="OUTPUT"
         android:scrollbars="vertical"
+        android:text="OUTPUT"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/buttonSend" />

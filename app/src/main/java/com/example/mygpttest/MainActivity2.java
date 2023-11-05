@@ -1,171 +1,165 @@
 package com.example.mygpttest;
-import android.Manifest;
-import android.content.pm.PackageManager;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.Gravity;
-import android.widget.TextView;
-import android.widget.TextSwitcher;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 
-import com.google.api.gax.rpc.ApiStreamObserver;
+import androidx.appcompat.app.AppCompatActivity;
+import android.os.Bundle;
+import android.content.pm.PackageManager;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.media.MediaRecorder;
+import android.os.AsyncTask;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+import androidx.core.app.ActivityCompat;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.speech.v1.*;
 import com.google.protobuf.ByteString;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class MainActivity2 extends AppCompatActivity {
-    private static final String TAG = "main2";
-    private static final String[] PERMISSIONS = {Manifest.permission.RECORD_AUDIO};
-    private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
 
-    private boolean permissionToRecord = false;
-    private AudioEmitter audioEmitter;
-    private TextSwitcher textView;
-    private SpeechClient speechClient;
+    private TextView resultTextView;
+    private Button startButton;
+    private Button stopButton;
+    private AudioRecord audioRecord;
+    private boolean isRecording = false;
+    private BlockingQueue<byte[]> audioData = new LinkedBlockingQueue<>();
+    private static final String TAG = "speech";
+
+    private class TranscribeTask extends AsyncTask<Void, String, String> {
+
+        @Override
+        protected String doInBackground(Void... params) {
+            // Google Cloud Speech-to-Text APIの初期化と認証
+            try (InputStream credentialsStream = getResources().openRawResource(R.raw.iniadbessho_credentials)) {
+                GoogleCredentials credentials = GoogleCredentials.fromStream(credentialsStream);
+                SpeechSettings settings = SpeechSettings.newBuilder().setCredentialsProvider(() -> credentials).build();
+                try (SpeechClient speechClient = SpeechClient.create(settings)) {
+                    // リクエストの生成
+                    RecognitionConfig config =
+                            RecognitionConfig.newBuilder()
+                                    .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
+                                    .setSampleRateHertz(16000)
+                                    .setLanguageCode("ja-JP")
+                                    .setModel("default")
+                                    .build();
+                    Log.i(TAG, "リクエストの生成完了");
+
+                    while (isRecording) {
+                        Log.d(TAG, "バックグラウンドプロセス");
+                        byte[] audioBuffer = audioData.poll();
+                        if (audioBuffer != null) {
+                            Log.i(TAG, ByteString.copyFrom(audioBuffer).toString());
+                            RecognitionAudio recognitionAudio = RecognitionAudio.newBuilder().setContent(ByteString.copyFrom(audioBuffer)).build();
+                            RecognizeRequest request = RecognizeRequest.newBuilder().setConfig(config).setAudio(recognitionAudio).build();
+
+                            Log.d(TAG, "認識完了");
+
+                            // API呼び出しと結果の取得
+                            RecognizeResponse response = speechClient.recognize(request);
+                            Log.i(TAG, response.getResultsList().toString());
+                            StringBuilder transcript = new StringBuilder();
+                            for (SpeechRecognitionResult result : response.getResultsList()) {
+                                transcript.append(result.getAlternatives(0).getTranscript());
+                                Log.i(TAG, "inner for" + transcript.toString());
+                            }
+                            publishProgress(transcript.toString()); // 進捗を更新して結果をUIに表示
+                            Log.i(TAG, "進捗更新完了");
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                Log.e(TAG, e.getMessage());
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(String... values) {
+            // UIを更新する処理（認識結果を表示するなど）
+            Log.i(TAG, "l: " + values.length);
+            String result = values[0];
+            if (result.equals("")) {
+                Log.i(TAG, "RESULT:" + result);
+                resultTextView.setText("Result is empty.");
+            } else {
+                Log.i(TAG, "RESULT:" + result);
+                resultTextView.setText(result);
+            }
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
 
-        // パーミッションのリクエスト
-        ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_RECORD_AUDIO_PERMISSION);
+        resultTextView = findViewById(R.id.resultTextView_M2);
+        startButton = findViewById(R.id.startButton_M2);
+        stopButton = findViewById(R.id.stopButton_M2);
 
-        // UI要素の取得
-        textView = findViewById(R.id.last_recognize_result);
-        textView.setFactory(() -> {
-            TextView t = new TextView(this);
-            t.setText("Please say something!");
-            t.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
-            t.setTextAppearance(android.R.style.TextAppearance_Large);
-            return t;
-        });
-        textView.setInAnimation(getApplicationContext(), android.R.anim.fade_in);
-        textView.setOutAnimation(getApplicationContext(), android.R.anim.fade_out);
+        startButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (isRecording) {
+                    Log.i(TAG, "すでに録音中です");
+                } else {
+                    Log.i(TAG, "START RECORDING");
+                    // マイクのパーミッションを確認
+                    if (ActivityCompat.checkSelfPermission(MainActivity2.this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                        ActivityCompat.requestPermissions(MainActivity2.this, new String[]{android.Manifest.permission.RECORD_AUDIO}, 1);
+                        return;
+                    }
 
-        // SpeechClientの初期化
-        try {
-            speechClient = SpeechClient.create(SpeechSettings.newBuilder()
-                    .setCredentialsProvider(() -> {
-                        try {
-                            return GoogleCredentials.fromStream(getResources().openRawResource(R.raw.iniadbessho_credentials));
-                        } catch (IOException e) {
-                            throw new RuntimeException("Failed to obtain credentials.", e);
+                    Log.i(TAG, "マイクのパーミッション確認通過");
+
+                    // マイクからの音声データを取得してキューに追加する処理
+                    int bufferSize = 98000;//AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+                    audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, 16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+                    audioRecord.startRecording();
+                    isRecording = true;
+
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.d(TAG, "Thread run");
+                            while (isRecording) {
+                                byte[] audioBuffer = new byte[bufferSize];
+                                int bytesRead = audioRecord.read(audioBuffer, 0, bufferSize);
+                                if (bytesRead > 0) {
+                                    Log.d(TAG, "size of byte Read" + bytesRead);
+                                    audioData.offer(audioBuffer);
+                                }
+                            }
                         }
-                    })
-                    .build());
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to initialize SpeechClient.", e);
-        }
-    }
+                    }).start();
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        // レコーディングを開始（パーミッションが許可されている場合）
-        if (permissionToRecord) {
-            AtomicBoolean isFirstRequest = new AtomicBoolean(true);
-            audioEmitter = new AudioEmitter();
-
-            // サーバーにデータをストリーミングし、応答を収集する
-            // 正しい型の ApiStreamObserver を作成
-            ApiStreamObserver<StreamingRecognizeResponse> responseObserver = new ApiStreamObserver<StreamingRecognizeResponse>() {
-                @Override
-                public void onNext(StreamingRecognizeResponse value) {
-                    runOnUiThread(() -> {
-                        if (value.getResultsCount() > 0) {
-                            textView.setText(value.getResults(0).getAlternatives(0).getTranscript());
-                        } else {
-                            textView.setText("Sorry, there was a problem!");
-                        }
-                    });
+                    new TranscribeTask().execute();
                 }
 
-                @Override
-                public void onError(Throwable t) {
-                    Log.e(TAG, "An error occurred", t);
-                }
-
-                @Override
-                public void onCompleted() {
-                    Log.d(TAG, "Stream closed");
-                }
-            };
-            // 正しい型の responseObserver を使用してbidiStreamingCallを呼び出す
-            ApiStreamObserver<StreamingRecognizeRequest> requestStream = speechClient
-                    .streamingRecognizeCallable()
-                    .bidiStreamingCall(responseObserver);
-
-
-
-            // 入力ストリームを監視し、音声データが利用可能になるとリクエストを送信
-            audioEmitter.start(bytes -> {
-                StreamingRecognizeRequest.Builder builder = StreamingRecognizeRequest.newBuilder()
-                        .setAudioContent(ByteString.copyFrom(bytes));
-
-                // 最初のリクエストの場合、設定を含める
-                if (isFirstRequest.getAndSet(false)) {
-                    builder.setStreamingConfig(StreamingRecognitionConfig.newBuilder()
-                            .setConfig(RecognitionConfig.newBuilder()
-                                    .setLanguageCode("en-US")
-                                    .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
-                                    .setSampleRateHertz(16000)
-                                    .build())
-                            .setInterimResults(false)
-                            .setSingleUtterance(false)
-                            .build());
-                }
-
-                // 次のリクエストを送信
-                requestStream.onNext(builder.build());
-            });
-        } else {
-            Log.e(TAG, "No permission to record! Please allow and then relaunch the app!");
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-
-        // マイクのデータを停止
-        if (audioEmitter != null) {
-            audioEmitter.stop();
-            audioEmitter = null;
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
-        // クリーンアップ
-        if (speechClient != null) {
-            try {
-                speechClient.close();
-            } catch (Exception e) {
-                Log.e(TAG, "Error closing SpeechClient", e);
             }
-        }
-    }
+        });
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == REQUEST_RECORD_AUDIO_PERMISSION) {
-            permissionToRecord = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
-        }
-
-        // 音声録音が利用できない場合はアプリを終了
-        if (!permissionToRecord) {
-            finish();
-        }
+        stopButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.i(TAG, "STOP RECORDING");
+                // マイクの録音を停止
+                isRecording = false;
+                if (audioRecord != null) {
+                    audioRecord.stop();
+                    audioRecord.release();
+                    audioRecord = null;
+                }
+            }
+        });
     }
 }
