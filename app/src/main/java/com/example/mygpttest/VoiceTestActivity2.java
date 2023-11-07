@@ -53,7 +53,7 @@ public class VoiceTestActivity2 extends AppCompatActivity {
                             RecognitionConfig.newBuilder()
                                     .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
                                     .setSampleRateHertz(16000)
-                                    .setLanguageCode("en-US")
+                                    .setLanguageCode("ja-JP") //en-US or ja-JP
                                     .setModel("default")
                                     .setUseEnhanced(true) // ストリーミング認識用に追加
                                     .build();
