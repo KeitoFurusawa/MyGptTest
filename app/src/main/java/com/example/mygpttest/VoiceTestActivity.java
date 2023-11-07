@@ -1,4 +1,9 @@
 package com.example.mygpttest;
+/**
+ * 音声認識テスト用アクティビティ_01
+ * バッファサイズ分の音声を適宜認識。ストリーミングではないので、抜け落ちやラグがひどい。
+ *
+ */
 
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
@@ -18,12 +23,10 @@ import com.google.protobuf.ByteString;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class MainActivity2 extends AppCompatActivity {
+public class VoiceTestActivity extends AppCompatActivity {
 
     private TextView resultTextView;
     private Button startButton;
@@ -100,7 +103,7 @@ public class MainActivity2 extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main2);
+        setContentView(R.layout.activity_voice_test);
 
         resultTextView = findViewById(R.id.resultTextView_M2);
         startButton = findViewById(R.id.startButton_M2);
@@ -114,8 +117,8 @@ public class MainActivity2 extends AppCompatActivity {
                 } else {
                     Log.i(TAG, "START RECORDING");
                     // マイクのパーミッションを確認
-                    if (ActivityCompat.checkSelfPermission(MainActivity2.this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                        ActivityCompat.requestPermissions(MainActivity2.this, new String[]{android.Manifest.permission.RECORD_AUDIO}, 1);
+                    if (ActivityCompat.checkSelfPermission(VoiceTestActivity.this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                        ActivityCompat.requestPermissions(VoiceTestActivity.this, new String[]{android.Manifest.permission.RECORD_AUDIO}, 1);
                         return;
                     }
 
