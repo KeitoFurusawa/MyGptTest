@@ -256,6 +256,7 @@ public class VoiceGptActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Void result) {
             new SendMessageTask().execute(message.toString()); //これを実行してメッセージ送信
+            message.setLength(0);
         }
 
 
