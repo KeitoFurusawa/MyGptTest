@@ -63,7 +63,7 @@ public class VoiceGptActivity extends AppCompatActivity {
     protected TextView textViewRes;
     protected TextView textViewReq;
     private Button buttonGoToHome;
-    private static String message;
+    private static StringBuilder message = new StringBuilder("");
     private Button startButton;
     private Button stopButton;
     private AudioRecord audioRecord;
@@ -155,8 +155,7 @@ public class VoiceGptActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(String... params) {
             //バックグラウンドで実行される処理
-            String message = params[0];
-            return send_message(message);
+            return send_message(params[0]);
         }
 
         @Override
@@ -245,15 +244,21 @@ public class VoiceGptActivity extends AppCompatActivity {
 
         @Override
         protected void onProgressUpdate(String... values) {
-            message = values[0];
-            if (message.equals("")) {
-                message = "No input";
-                textViewReq.setText(message);
+            message.append(values[0]);
+            if (values[0].equals("")) {
+                textViewReq.setText("No input");
             } else {
                 textViewReq.setText(message);
             }
-            new SendMessageTask().execute(message); //これを実行してメッセージ送信
+
         }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            new SendMessageTask().execute(message.toString()); //これを実行してメッセージ送信
+        }
+
+
     }
 
 
