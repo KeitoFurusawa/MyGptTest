@@ -35,6 +35,7 @@ public class ChatGptActivity extends AppCompatActivity {
     protected TextView textViewRes;
     protected TextView textViewReq;
     private Button buttonGoToSpeech;
+    private static String prompt;
 
 
     @Override
@@ -48,6 +49,9 @@ public class ChatGptActivity extends AppCompatActivity {
         buttonGoToSpeech = findViewById(R.id.buttonGoToSpeech);
         textViewRes = findViewById(R.id.textViewRes);
         textViewReq = findViewById(R.id.textViewReq);
+
+        // 文字列リソースで静的な変数を初期化
+        prompt = getString(R.string.prompt_osaka);
 
         // UI要素の初期設定
         textViewRes.setMovementMethod(new ScrollingMovementMethod());
@@ -86,7 +90,7 @@ public class ChatGptActivity extends AppCompatActivity {
         JSONObject systemMessage = new JSONObject();
         try {
             systemMessage.put("role", "system");
-            systemMessage.put("content", "You are a helpful assistant.");
+            systemMessage.put("content", prompt);
         } catch (JSONException e) {
             e.printStackTrace();
         }
