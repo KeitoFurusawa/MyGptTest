@@ -1,9 +1,9 @@
-package com.example.mygpttest;
 /**
  * 音声認識テスト用アクティビティ_02
  * ストリーミングを実装中
  *
  */
+package com.example.mygpttest;
 
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
@@ -41,7 +41,6 @@ public class VoiceTestActivity2 extends AppCompatActivity {
     private static final String TAG = "speech";
 
     private class TranscribeTask extends AsyncTask<Void, String, Void> {
-
         @Override
         protected Void doInBackground(Void... params) {
             try (InputStream credentialsStream = getResources().openRawResource(R.raw.iniadbessho_credentials)) {
