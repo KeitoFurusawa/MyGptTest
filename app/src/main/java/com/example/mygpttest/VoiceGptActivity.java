@@ -26,6 +26,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.MediaType;
@@ -60,15 +61,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class VoiceGptActivity extends AppCompatActivity {
     private static final String TAG = "speech";
-    private static final String API_KEY = "8UCHXpBd7Q2Lw86gWWAFCY6XGBO8JiGUVplGo6AJwsIHK3lIQDqS7HlDMCIs9q4fI0Mf4hvWqiYmEopDxTyVBBw";
+    private String MY_API_KEY;
+    private String SPECIAL_API_KEY;
     private static final String API_BASE = "https://api.openai.iniad.org/api/v1/chat/completions";
+    private static final String ORIGINAL_API_BASE = "https://api.openai.com/v1/chat/completions";
     protected static JSONArray chatHistory = new JSONArray();
     protected TextView textViewRes;
     protected TextView textViewReq;
     private Button buttonGoToHome;
     private static StringBuilder message = new StringBuilder("");
     private Button startButton;
-    private Button stopButton;
     private AudioRecord audioRecord;
     private boolean isRecording = false;
     private BlockingQueue<byte[]> audioData = new LinkedBlockingQueue<>();
@@ -94,6 +96,8 @@ public class VoiceGptActivity extends AppCompatActivity {
         // UI要素の初期設定
         textViewRes.setMovementMethod(new ScrollingMovementMethod());
         textViewReq.setMovementMethod(new ScrollingMovementMethod());
+        MY_API_KEY = getString(R.string.my_key);
+        SPECIAL_API_KEY = getString(R.string.special_key);
 
         //初期設定を行う
         setup();
@@ -157,7 +161,6 @@ public class VoiceGptActivity extends AppCompatActivity {
                         }
                         startButton.setBackgroundTintList(ColorStateList.valueOf(colorGreen));
                         startButton.setText("START");
-
                         return true;
                 }
                 return false;
@@ -266,6 +269,7 @@ public class VoiceGptActivity extends AppCompatActivity {
                     // 認識が終了したら、クリーンアップ
                     clientStream.closeSend();
                 }
+
             } catch (IOException e) {
                 Log.e(TAG, "Error reading credentials: " + e.getMessage());
             }
@@ -280,14 +284,14 @@ public class VoiceGptActivity extends AppCompatActivity {
                 textViewReq.setText("No input");
             } else {
                 textViewReq.setText(message);
+                new SendMessageTask().execute(message.toString()); //これを実行してメッセージ送信
+                message.setLength(0);
             }
-
         }
 
         @Override
         protected void onPostExecute(Void result) {
-            new SendMessageTask().execute(message.toString()); //これを実行してメッセージ送信
-            message.setLength(0);
+            Log.i(TAG, "このメッセージを送信:" + message);
         }
 
 
@@ -314,10 +318,11 @@ public class VoiceGptActivity extends AppCompatActivity {
             JSONObject userMessage = new JSONObject();
             userMessage.put("role", "user");
             userMessage.put("content", message);
+            Log.i(TAG, "This is message: " + message);
             chatHistory.put(userMessage);
 
             JSONObject requestBody = new JSONObject();
-            requestBody.put("model", "gpt-3.5-turbo");
+            requestBody.put("model", "gpt-3.5-turbo-1106");
             requestBody.put("messages", chatHistory);
             requestBody.put("temperature", 0.7);
             //requestBody.put("max_tokens", 1000);
@@ -331,11 +336,11 @@ public class VoiceGptActivity extends AppCompatActivity {
 
             MediaType JSON = MediaType.parse("application/json; charset=utf-8");
             RequestBody body = RequestBody.create(JSON, requestBody.toString());
-
+            //GPTリクエストヘッダ
             Request request = new Request.Builder()
-                    .url(API_BASE)
+                    .url(ORIGINAL_API_BASE)
                     .post(body)
-                    .addHeader("Authorization", "Bearer " + API_KEY)
+                    .addHeader("Authorization", "Bearer " + SPECIAL_API_KEY)
                     .addHeader("Content-Type", "application/json")
                     .build();
 
