@@ -9,12 +9,15 @@ package com.example.mygpttest;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.view.MotionEvent;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -70,6 +73,8 @@ public class VoiceGptActivity extends AppCompatActivity {
     private boolean isRecording = false;
     private BlockingQueue<byte[]> audioData = new LinkedBlockingQueue<>();
     private static String prompt;
+    private static int colorGreen = Color.parseColor("#FF009688");
+    private static int colorRed = Color.parseColor("#FFF44336");
 
 
     @Override
@@ -80,7 +85,6 @@ public class VoiceGptActivity extends AppCompatActivity {
         // UI要素を取得
         buttonGoToHome = findViewById(R.id.buttonGoToHome_VG);
         startButton = findViewById(R.id.startButton_VG);
-        stopButton = findViewById(R.id.stopButton_VG);
         textViewRes = findViewById(R.id.textViewRes_VG);
         textViewReq = findViewById(R.id.textViewReq_VG);
 
@@ -103,55 +107,78 @@ public class VoiceGptActivity extends AppCompatActivity {
                 startActivity(intent); // 新しいアクティビティを起動
             }
         });
-        // 音声認識開始ボタンのクリックリスナーを設定
+
+        // 音声認識_長押しリスナー
+        startButton.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                switch (motionEvent.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        if (isRecording) {
+                            Log.i(TAG, "すでに録音中です");
+                        } else {
+                            Log.i(TAG, "START RECORDING");
+                            startButton.setBackgroundTintList(ColorStateList.valueOf(colorRed));
+                            startButton.setText("RECORDING");
+                            if (ActivityCompat.checkSelfPermission(VoiceGptActivity.this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                                ActivityCompat.requestPermissions(VoiceGptActivity.this, new String[]{android.Manifest.permission.RECORD_AUDIO}, 1);
+                                return true;
+                            }
+
+                            int bufferSize = AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+                            audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, 16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+                            audioRecord.startRecording();
+                            isRecording = true;
+
+                            new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    while (isRecording) {
+                                        byte[] audioBuffer = new byte[bufferSize];
+                                        int bytesRead = audioRecord.read(audioBuffer, 0, bufferSize);
+                                        if (bytesRead > 0) {
+                                            audioData.offer(audioBuffer);
+                                        }
+                                    }
+                                }
+                            }).start();
+
+                            new VoiceGptActivity.TranscribeTask().execute();
+                        }
+
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                        Log.i(TAG, "STOP RECORDING");
+                        isRecording = false;
+                        if (audioRecord != null) {
+                            audioRecord.stop();
+                            audioRecord.release();
+                            audioRecord = null;
+                        }
+                        startButton.setBackgroundTintList(ColorStateList.valueOf(colorGreen));
+                        startButton.setText("START");
+
+                        return true;
+                }
+                return false;
+            }
+        });
+
+        /* 音声認識開始ボタンのクリックリスナーを設定
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (isRecording) {
-                    Log.i(TAG, "すでに録音中です");
-                } else {
-                    Log.i(TAG, "START RECORDING");
-                    if (ActivityCompat.checkSelfPermission(VoiceGptActivity.this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                        ActivityCompat.requestPermissions(VoiceGptActivity.this, new String[]{android.Manifest.permission.RECORD_AUDIO}, 1);
-                        return;
-                    }
-
-                    int bufferSize = AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
-                    audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, 16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
-                    audioRecord.startRecording();
-                    isRecording = true;
-
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            while (isRecording) {
-                                byte[] audioBuffer = new byte[bufferSize];
-                                int bytesRead = audioRecord.read(audioBuffer, 0, bufferSize);
-                                if (bytesRead > 0) {
-                                    audioData.offer(audioBuffer);
-                                }
-                            }
-                        }
-                    }).start();
-
-                    new VoiceGptActivity.TranscribeTask().execute();
-                }
-
             }
         });
-        // 音声認識終了ボタンのクリックリスナーを設定
+        */
+        /* 音声認識終了ボタンのクリックリスナーを設定
         stopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Log.i(TAG, "STOP RECORDING");
-                isRecording = false;
-                if (audioRecord != null) {
-                    audioRecord.stop();
-                    audioRecord.release();
-                    audioRecord = null;
-                }
+
             }
         });
+        */
     }
 
     /* GPTにメッセージを送信する非同期タスク */
