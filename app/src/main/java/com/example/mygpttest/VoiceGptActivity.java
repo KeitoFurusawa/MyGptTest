@@ -60,8 +60,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class VoiceGptActivity extends AppCompatActivity {
     private static final String TAG = "speech";
-    private static final String API_KEY = "8UCHXpBd7Q2Lw86gWWAFCY6XGBO8JiGUVplGo6AJwsIHK3lIQDqS7HlDMCIs9q4fI0Mf4hvWqiYmEopDxTyVBBw";
-    private static final String API_BASE = "https://api.openai.iniad.org/api/v1/chat/completions";
+    //private static final String API_KEY = "8UCHXpBd7Q2Lw86gWWAFCY6XGBO8JiGUVplGo6AJwsIHK3lIQDqS7HlDMCIs9q4fI0Mf4hvWqiYmEopDxTyVBBw";
+    private static final String API_KEY = "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";
+    //private static final String API_BASE = "https://api.openai.iniad.org/api/v1/chat/completions";
+    private static final String API_BASE = "https://api.openai.com/v1/chat/completions";
     protected static JSONArray chatHistory = new JSONArray();
     protected TextView textViewRes;
     protected TextView textViewReq;
@@ -317,7 +319,7 @@ public class VoiceGptActivity extends AppCompatActivity {
             chatHistory.put(userMessage);
 
             JSONObject requestBody = new JSONObject();
-            requestBody.put("model", "gpt-3.5-turbo");
+            requestBody.put("model", "gpt-4-1106-preview");
             requestBody.put("messages", chatHistory);
             requestBody.put("temperature", 0.7);
             //requestBody.put("max_tokens", 1000);
