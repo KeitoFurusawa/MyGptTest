@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">MyGptTest</string>
-    <string name="prompt_old">\
+    <string name="prompt_old">
         君の役割は、江戸切子を売るお店日本人店主のサポート。
         お店には外国人が尋ねてくる。店主は英語が話せないため、君は適切な返答を英語でサジェストせよ。
         返答は店主が読み上げることを前提として出力せよ。
