@@ -26,6 +26,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.MediaType;
@@ -160,7 +161,6 @@ public class VoiceGptActivity extends AppCompatActivity {
                         }
                         startButton.setBackgroundTintList(ColorStateList.valueOf(colorGreen));
                         startButton.setText("START");
-
                         return true;
                 }
                 return false;
@@ -269,6 +269,7 @@ public class VoiceGptActivity extends AppCompatActivity {
                     // 認識が終了したら、クリーンアップ
                     clientStream.closeSend();
                 }
+
             } catch (IOException e) {
                 Log.e(TAG, "Error reading credentials: " + e.getMessage());
             }
@@ -283,14 +284,14 @@ public class VoiceGptActivity extends AppCompatActivity {
                 textViewReq.setText("No input");
             } else {
                 textViewReq.setText(message);
+                new SendMessageTask().execute(message.toString()); //これを実行してメッセージ送信
+                message.setLength(0);
             }
-
         }
 
         @Override
         protected void onPostExecute(Void result) {
-            new SendMessageTask().execute(message.toString()); //これを実行してメッセージ送信
-            message.setLength(0);
+            Log.i(TAG, "このメッセージを送信:" + message);
         }
 
 
@@ -317,6 +318,7 @@ public class VoiceGptActivity extends AppCompatActivity {
             JSONObject userMessage = new JSONObject();
             userMessage.put("role", "user");
             userMessage.put("content", message);
+            Log.i(TAG, "This is message: " + message);
             chatHistory.put(userMessage);
 
             JSONObject requestBody = new JSONObject();
