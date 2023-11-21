@@ -61,7 +61,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class VoiceGptActivity extends AppCompatActivity {
     private static final String TAG = "speech";
     //private static final String API_KEY = "8UCHXpBd7Q2Lw86gWWAFCY6XGBO8JiGUVplGo6AJwsIHK3lIQDqS7HlDMCIs9q4fI0Mf4hvWqiYmEopDxTyVBBw";
-    private static final String API_KEY = "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";
+    private static final String API_KEY = "";
     //private static final String API_BASE = "https://api.openai.iniad.org/api/v1/chat/completions";
     private static final String API_BASE = "https://api.openai.com/v1/chat/completions";
     protected static JSONArray chatHistory = new JSONArray();
