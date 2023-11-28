@@ -73,6 +73,8 @@ public class VoiceGptActivity extends AppCompatActivity {
     private Button startButton;
     private AudioRecord audioRecord;
     private boolean isRecording = false;
+    private boolean isSent = false;
+    private boolean isTranscribing = false;
     private BlockingQueue<byte[]> audioData = new LinkedBlockingQueue<>();
     private static String prompt;
     private static int colorGreen = Color.parseColor("#FF009688");
@@ -91,7 +93,7 @@ public class VoiceGptActivity extends AppCompatActivity {
         textViewReq = findViewById(R.id.textViewReq_VG);
 
         // 文字列リソースで静的な変数を初期化
-        prompt = getString(R.string.prompt_short);
+        prompt = getString(R.string.prompt2);
 
         // UI要素の初期設定
         textViewRes.setMovementMethod(new ScrollingMovementMethod());
@@ -118,6 +120,7 @@ public class VoiceGptActivity extends AppCompatActivity {
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 switch (motionEvent.getAction()) {
                     case MotionEvent.ACTION_DOWN:
+                        isSent = false;
                         if (isRecording) {
                             Log.i(TAG, "すでに録音中です");
                         } else {
@@ -161,6 +164,13 @@ public class VoiceGptActivity extends AppCompatActivity {
                         }
                         startButton.setBackgroundTintList(ColorStateList.valueOf(colorGreen));
                         startButton.setText("START");
+
+                        if (!isTranscribing && !isSent) {
+                            Log.i(TAG, "[on MotionEvent]-メッセージを送信:" + message);
+                            new SendMessageTask().execute(message.toString()); //これを実行してメッセージ送信
+                            message.setLength(0);
+                            isSent = true;
+                        }
                         return true;
                 }
                 return false;
@@ -223,11 +233,12 @@ public class VoiceGptActivity extends AppCompatActivity {
                     ClientStream<StreamingRecognizeRequest> clientStream =
                             speechClient.streamingRecognizeCallable().splitCall(new ResponseObserver<StreamingRecognizeResponse>() {
                                 @Override
-                                public void onStart(StreamController controller) {}
+                                public void onStart(StreamController controller) {isTranscribing = true;}
 
                                 @Override
                                 public void onResponse(StreamingRecognizeResponse response) {
                                     for (StreamingRecognitionResult result : response.getResultsList()) {
+
                                         Log.i(TAG, result.toString()); //[debug] レスポンスメッセージを適宜表示
                                         SpeechRecognitionAlternative alternative = result.getAlternatives(0);
                                         final String transcript = alternative.getTranscript();
@@ -283,18 +294,22 @@ public class VoiceGptActivity extends AppCompatActivity {
             if (values[0].equals("")) {
                 textViewReq.setText("No input");
             } else {
+                Log.i(TAG, "SET TEXT: " + message);
                 textViewReq.setText(message);
+                isTranscribing = false;
+            }
+            if (!isRecording && !isSent) {
+                Log.i(TAG, "[on Progress Update]-メッセージを送信:" + message);
                 new SendMessageTask().execute(message.toString()); //これを実行してメッセージ送信
                 message.setLength(0);
+                isSent = true;
             }
         }
 
         @Override
         protected void onPostExecute(Void result) {
-            Log.i(TAG, "このメッセージを送信:" + message);
+
         }
-
-
     }
 
 
@@ -310,6 +325,7 @@ public class VoiceGptActivity extends AppCompatActivity {
         }
 
         chatHistory.put(systemMessage);
+        Log.i(TAG, chatHistory.toString());
     }
 
     /* メッセージ送信用関数 */
@@ -327,7 +343,7 @@ public class VoiceGptActivity extends AppCompatActivity {
             requestBody.put("temperature", 0.7);
             //requestBody.put("max_tokens", 1000);
 
-            //OkHttpClient client = new OkHttpClient();
+            /* タイムアウトの設定 */
             OkHttpClient client = new OkHttpClient.Builder()
                     .connectTimeout(10, TimeUnit.SECONDS)
                     .writeTimeout(10, TimeUnit.SECONDS)
@@ -345,7 +361,6 @@ public class VoiceGptActivity extends AppCompatActivity {
                     .build();
 
             Response response = client.newCall(request).execute();
-            //↑IOException_timeoutはここで出てる↑
             Log.d(TAG, "SUCCESS: getting response");
             if (response.isSuccessful()) {
                 Log.d(TAG, response.toString());
