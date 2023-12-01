@@ -27,8 +27,10 @@ import okhttp3.Response;
 
 public class ChatGptActivity extends AppCompatActivity {
     private static final String TAG = "main";
-    private static final String API_KEY = "8UCHXpBd7Q2Lw86gWWAFCY6XGBO8JiGUVplGo6AJwsIHK3lIQDqS7HlDMCIs9q4fI0Mf4hvWqiYmEopDxTyVBBw";
+    private String MY_API_KEY;
+    private String SPECIAL_API_KEY;
     private static final String API_BASE = "https://api.openai.iniad.org/api/v1/chat/completions";
+    private static final String ORIGINAL_API_BASE = "https://api.openai.com/v1/chat/completions";
     protected static JSONArray chatHistory = new JSONArray();
     protected EditText editText;
     protected Button buttonSend;
@@ -51,7 +53,11 @@ public class ChatGptActivity extends AppCompatActivity {
         textViewReq = findViewById(R.id.textViewReq);
 
         // 文字列リソースで静的な変数を初期化
-        prompt = getString(R.string.prompt_osaka);
+        prompt = getString(R.string.prompt2);
+
+        //キーをセット
+        MY_API_KEY = getString(R.string.my_key);
+        SPECIAL_API_KEY = getString(R.string.special_key);
 
         // UI要素の初期設定
         textViewRes.setMovementMethod(new ScrollingMovementMethod());
@@ -150,7 +156,7 @@ public class ChatGptActivity extends AppCompatActivity {
             Request request = new Request.Builder()
                     .url(API_BASE)
                     .post(body)
-                    .addHeader("Authorization", "Bearer " + API_KEY)
+                    .addHeader("Authorization", "Bearer " + MY_API_KEY)
                     .addHeader("Content-Type", "application/json")
                     .build();
 
