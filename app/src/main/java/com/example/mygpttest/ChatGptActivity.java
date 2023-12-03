@@ -53,7 +53,7 @@ public class ChatGptActivity extends AppCompatActivity {
         textViewReq = findViewById(R.id.textViewReq);
 
         // 文字列リソースで静的な変数を初期化
-        prompt = getString(R.string.prompt2);
+        prompt = getString(R.string.prompt_v1_1);
 
         //キーをセット
         MY_API_KEY = getString(R.string.my_key);
