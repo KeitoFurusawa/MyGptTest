@@ -61,6 +61,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class VoiceGptActivity extends AppCompatActivity {
     private static final String TAG = "speech";
+    private static final String TAG2 = "timecnt";
     private String MY_API_KEY;
     private String SPECIAL_API_KEY;
     private static final String API_BASE = "https://api.openai.iniad.org/api/v1/chat/completions";
@@ -80,6 +81,8 @@ public class VoiceGptActivity extends AppCompatActivity {
     private static int colorGreen = Color.parseColor("#FF009688");
     private static int colorRed = Color.parseColor("#FFF44336");
 
+    //時間計測用
+    private long startTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -206,6 +209,7 @@ public class VoiceGptActivity extends AppCompatActivity {
         protected void onPostExecute(String response) {
             //タスクが完了した後に実行される処理
             // レスポンスをTextViewに表示
+            printTimeLog(response);
             textViewRes.setText(""+ response);
             Log.d(TAG, "onPostExecute: " + response);
         }
@@ -331,6 +335,7 @@ public class VoiceGptActivity extends AppCompatActivity {
     /* メッセージ送信用関数 */
     protected String send_message(String message) {
         try {
+            setStartTime();
             JSONObject userMessage = new JSONObject();
             userMessage.put("role", "user");
             userMessage.put("content", message);
@@ -388,6 +393,14 @@ public class VoiceGptActivity extends AppCompatActivity {
             e.printStackTrace();
             return "エラー: " + e.getMessage();
         }
+    }
+
+    private void setStartTime() {
+        startTime = System.currentTimeMillis();
+    }
+
+    private void printTimeLog(String response) {
+        Log.i(TAG2, response + " : " + (System.currentTimeMillis() - startTime + "ms"));
     }
 
 }
