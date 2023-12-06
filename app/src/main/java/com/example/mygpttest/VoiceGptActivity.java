@@ -93,7 +93,7 @@ public class VoiceGptActivity extends AppCompatActivity {
         textViewReq = findViewById(R.id.textViewReq_VG);
 
         // 文字列リソースで静的な変数を初期化
-        prompt = getString(R.string.prompt_v1_1);
+        prompt = getString(R.string.prompt_v1_2);
 
         // UI要素の初期設定
         textViewRes.setMovementMethod(new ScrollingMovementMethod());
