@@ -345,7 +345,7 @@ public class VoiceGptActivity extends AppCompatActivity {
             JSONObject requestBody = new JSONObject();
             requestBody.put("model", "gpt-3.5-turbo-1106");
             requestBody.put("messages", chatHistory);
-            requestBody.put("temperature", 0.7);
+            requestBody.put("temperature", 0.5);
             //requestBody.put("max_tokens", 1000);
 
             /* タイムアウトの設定 */
